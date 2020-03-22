@@ -1,0 +1,4 @@
+flask
+click
+gunicorn
+python-dotenv

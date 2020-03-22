@@ -1,0 +1,5 @@
+werkzeug
+flask
+click
+Jinja2
+python-dotenv
