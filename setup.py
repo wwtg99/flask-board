@@ -12,6 +12,7 @@ setup(
     version=VERSION,
     description='Build base flask app depends on template.',
     long_description=LONG_DESCRIPTION,
+    long_description_content_type='text/markdown',
     url='https://github.com/wwtg99/flask-board',
     author='Wu Wentao',
     author_email='wwtg99@gmail.com',
