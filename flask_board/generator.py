@@ -1,12 +1,21 @@
 import os
 import shutil
 import random
+import fnmatch
 import string
 import click
 
 
 def generate_random_str(length=16):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+def guess_generator(name, directory, template):
+    if os.path.exists(template) and os.path.isdir(template):
+        template_dir = os.path.dirname(template)
+        return Jinja2Generator(name=name, directory=directory, template=template, template_dir=template_dir)
+    else:
+        return Jinja2Generator(name=name, directory=directory, template=template)
 
 
 class AppGenerator:
@@ -24,6 +33,10 @@ class AppGenerator:
         else:
             path = self.name
         return path
+
+    @property
+    def default_additional(self):
+        return {}
 
     def create_app_dir(self, exist_ok=False):
         """
@@ -50,7 +63,17 @@ class AppGenerator:
         """
         if 'skip' in kwargs and kwargs['skip'] is True:
             self.skip_prompt = True
+        # create app directory
         self.create_app_dir()
+        # generate additional params
+        additional = kwargs.get('additional')
+        params = self.default_additional
+        if additional:
+            for a in additional:
+                idx = a.find('=')
+                if idx > 0:
+                    params[a[0:idx]] = a[idx + 1:]
+        kwargs['additional_params'] = params
         return kwargs
 
     def generate(self, **kwargs):
@@ -70,9 +93,22 @@ class FileGenerator(AppGenerator):
 
     category = 'file'
 
+    def __init__(self, name, directory, template, template_dir=None):
+        super().__init__(name, directory, template)
+        self.template_dir = template_dir
+
     @classmethod
     def get_internal_template_dir(cls):
         return os.path.realpath(os.path.join(os.path.dirname(__file__), 'templates', cls.category))
+
+    @classmethod
+    def find_template(cls, template, template_dir=None):
+        if not template_dir:
+            template_dir = cls.get_internal_template_dir()
+        path = os.path.join(template_dir, template)
+        if os.path.exists(path):
+            return path
+        raise FileNotFoundError('Template path {} not found!'.format(path))
 
     @staticmethod
     def get_rel_path(base_path, path):
@@ -83,18 +119,9 @@ class FileGenerator(AppGenerator):
         else:
             raise ValueError('Path {} must larger than base path {}!'.format(path, base_path))
 
-    def find_template(self, template_dir=None):
-        if not template_dir:
-            template_dir = self.get_internal_template_dir()
-        path = os.path.join(template_dir, self.template)
-        if os.path.exists(path):
-            return path
-        raise FileNotFoundError('Template path {} not found!'.format(path))
-
     def pre_process(self, **kwargs):
         kwargs = super().pre_process(**kwargs)
-        template_dir = kwargs.get('template_dir')
-        path = self.find_template(template_dir=template_dir)
+        path = self.find_template(template=self.template, template_dir=self.template_dir)
         kwargs['template_path'] = path
         return kwargs
 
@@ -124,6 +151,40 @@ class Jinja2Generator(FileGenerator):
         'https://pypi.doubanio.com/simple/',
     ]
 
+    @property
+    def default_additional(self):
+        return {'secret': generate_random_str()}
+
+    @staticmethod
+    def get_ignore_filter(ignore_file_pattern, ignore_dir_pattern):
+        if not ignore_file_pattern:
+            ignore_file_pattern = ['*.pyc', '*.pyo', '*.pyd', '*.egg', '*.log', '*.so', '*.zip', '*.tar', '*.tar.gz']
+        if isinstance(ignore_file_pattern, str):
+            ignore_file_pattern = ignore_file_pattern.split(',')
+        if not ignore_dir_pattern:
+            ignore_dir_pattern = ['.git', '__pycache__', '*.egg-info', 'build', 'dist', '.idea']
+        if isinstance(ignore_dir_pattern, str):
+            ignore_dir_pattern = ignore_dir_pattern.split(',')
+
+        print('==', ignore_file_pattern)
+
+        def ignore_file_filter(path):
+            for exc in ignore_file_pattern:
+                if fnmatch.fnmatch(path, exc):
+                    print('---ignore ', path)
+                    return False
+            return True
+
+        def ignore_dir_filter(path):
+            paths = path.strip(os.path.sep).split(os.path.sep)
+            for exc in ignore_dir_pattern:
+                for p in paths:
+                    if fnmatch.fnmatch(p, exc):
+                        return False
+            return True
+
+        return ignore_file_filter, ignore_dir_filter
+
     def get_context(self, **kwargs):
         context = {
             'name': self.name,
@@ -135,16 +196,8 @@ class Jinja2Generator(FileGenerator):
 
     def pre_process(self, **kwargs):
         kwargs = super().pre_process(**kwargs)
-        # generate render params
-        additional = kwargs.get('additional')
-        params = {'secret': generate_random_str()}
-        if additional:
-            for a in additional:
-                idx = a.find('=')
-                if idx > 0:
-                    params[a[0:idx]] = a[idx + 1:]
         # select package index
-        if 'pip_index' not in params:
+        if 'pip_index' not in kwargs['additional_params']:
             pip_index = 1
             if not self.skip_prompt:
                 pip_index = 0
@@ -153,30 +206,33 @@ class Jinja2Generator(FileGenerator):
                 msg += ['', 'Please input the front number: ']
                 while pip_index <= 0 or pip_index > len(self.index_list):
                     pip_index = click.prompt('\n'.join(msg), type=int, default=1)
-            params['pip_index'] = self.index_list[pip_index - 1]
-        # set render_params
-        kwargs['render_params'] = params
+            kwargs['additional_params']['pip_index'] = self.index_list[pip_index - 1]
         return kwargs
 
     def generate(self, **kwargs):
         path = kwargs.get('template_path')
-        params = kwargs.get('render_params') or {}
+        params = kwargs.get('additional_params') or {}
+        excludes = kwargs.get('excludes')
+        excludes_dir = kwargs.get('excludes_dir')
+        excludes_file_filter, excludes_dir_filter = self.get_ignore_filter(excludes, excludes_dir)
         context = self.get_context(template_path=path)
         # load templates
         from jinja2 import Environment, FileSystemLoader
         env = Environment(loader=FileSystemLoader(path))
         for name, dirs, files in os.walk(path):
             rel_path = self.get_rel_path(path, name)
-            # create sub directories
-            for d in dirs:
-                os.makedirs(os.path.join(self.app_dir, rel_path, d), exist_ok=True)
+            # filter ignores
+            if not excludes_dir_filter(rel_path):
+                continue
+            files = filter(excludes_file_filter, files)
+            # create directory
+            os.makedirs(os.path.join(self.app_dir, rel_path), exist_ok=True)
             # get templates
             if rel_path:
-                tmpls = [os.path.join(rel_path, t) for t in files if not t.endswith('.pyc')]
+                tmpls = [os.path.join(rel_path, t) for t in files]
             else:
                 tmpls = files
             for tmpl in tmpls:
-                print('-----', tmpl)
                 template = env.get_template(tmpl, globals={'context': context})
                 target = os.path.join(self.app_dir, tmpl)
                 with open(target, 'w') as fh:

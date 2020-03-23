@@ -1,15 +1,14 @@
 from setuptools import setup
 from setuptools import find_packages
+from flask_board import __version__
 
-
-VERSION = '0.1.0'
 
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
     name='Flask-Board',
-    version=VERSION,
+    version=__version__,
     description='Build base flask app depends on template.',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
