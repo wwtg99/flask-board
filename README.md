@@ -21,7 +21,7 @@ flask board --help
 
 # Usage
 
-Create flask project depends on pre defined templates.
+## Create flask project depends on pre defined templates.
 
 ```
 flask board your-project
@@ -33,13 +33,22 @@ Same as used the `default` template.
 flask board your-project -t default
 ```
 
-Change the project directory (default use the current directory).
+## Available templates
+
+- default: default flask web app
+- celery: flask app with celery
+
+## Change the project directory
+
+Change project directory by option `-d`, default use the current directory.
 
 ```
 flask board your-project -d <path-to-directory>
 ```
 
-Use your own project template.
+## Use your own project template
+
+Use `-t` option point to the custom project directory.
 
 ```
 flask board your-project -t <path-to-your-tempalte-directory>

@@ -55,3 +55,9 @@ LOGGER = {
         'handlers': (os.getenv('LOG_HANDLERS') or 'console,file').split(',')
     }
 }
+
+# Celery
+CELERY_CONFIG = {
+    'broker_url': os.getenv('CELERY_BROKER_URL'),
+    'result_backend': os.getenv('CELERY_RESULT_BACKEND'),
+}

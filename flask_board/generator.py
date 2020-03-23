@@ -20,6 +20,71 @@ def guess_generator(name, directory, template):
 
 class AppGenerator:
 
+    ignore_content = """
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# IDEs
+.idea/
+
+# data
+instance/
+.DS_store
+.env
+    """
+
     def __init__(self, name, directory, template):
         self.name = name
         self.directory = directory or ''
@@ -48,6 +113,12 @@ class AppGenerator:
         if not exist_ok and os.path.exists(path):
             raise FileExistsError('App path {} already exists!'.format(path))
         os.makedirs(path, exist_ok=exist_ok)
+
+    def create_ignore(self):
+        path = os.path.join(self.app_dir, '.gitignore')
+        if not os.path.exists(path):
+            with open(path, 'w') as fh:
+                fh.write(self.ignore_content)
 
     def run(self, **kwargs):
         """
@@ -86,7 +157,8 @@ class AppGenerator:
         """
         Post process after generation
         """
-        pass
+        self.create_ignore()
+        click.echo('Create project {} successfully. Enjoy yourself!'.format(self.app_dir))
 
 
 class FileGenerator(AppGenerator):
@@ -166,12 +238,9 @@ class Jinja2Generator(FileGenerator):
         if isinstance(ignore_dir_pattern, str):
             ignore_dir_pattern = ignore_dir_pattern.split(',')
 
-        print('==', ignore_file_pattern)
-
         def ignore_file_filter(path):
             for exc in ignore_file_pattern:
                 if fnmatch.fnmatch(path, exc):
-                    print('---ignore ', path)
                     return False
             return True
 

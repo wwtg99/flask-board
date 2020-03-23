@@ -2,6 +2,7 @@ import os
 from werkzeug.utils import import_string
 from logging.config import dictConfig
 from flask import Flask
+from celery import Celery
 
 
 # Environment key to config flask instance path
@@ -31,9 +32,9 @@ def create_app_by_config(conf=None, config_log=True, register=True):
     """
     Create flask app by config object.
 
+    :param conf: config object
     :param config_log: whether to config logger
     :param register: whether to register apps
-    :param conf: config object
     :return: flask app
     """
     # check instance path
@@ -68,3 +69,14 @@ def create_app(config_log=True, register=True):
     """
     config = os.environ.get(ENV_CONFIG_MODULE) or 'config'
     return create_app_by_config(conf=config, config_log=config_log, register=register)
+
+
+def init_celery(app):
+    cel = Celery(app.name)
+    cel.conf.update(app.config['CELERY_CONFIG'])
+    # register tasks
+    with app.app_context():
+        register_apps = app.config['REGISTERED_APP']
+        for app in register_apps:
+            import_string('{}.tasks'.format(app), silent=True)
+    return cel

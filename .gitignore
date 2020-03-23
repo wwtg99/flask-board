@@ -58,3 +58,4 @@ target/
 
 # data
 .DS_store
+!flask_board/templates
