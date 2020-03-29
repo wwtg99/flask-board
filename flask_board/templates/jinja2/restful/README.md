@@ -3,7 +3,7 @@ Flask Project
 
 # Description
 
-Develop Flask application.
+Develop restful API Flask application with [Flask-Restful](https://flask-restful.readthedocs.io/en/latest/).
 
 # Install requirements
 

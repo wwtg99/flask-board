@@ -36,6 +36,7 @@ flask board your-project -t default
 ## Available templates
 
 - default: default flask web app
+- restful: flask restful API web app
 - celery: flask app with celery
 
 ## Change the project directory

@@ -1,6 +1,10 @@
 Flask Project
 =============
 
+# Description
+
+Develop Flask application with [Celery](https://docs.celeryproject.org/en/stable/).
+
 # Install requirements
 
 ```
