@@ -2,3 +2,4 @@ flask
 click
 gunicorn
 python-dotenv
+pytest

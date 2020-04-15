@@ -16,11 +16,6 @@ SECRET_KEY = os.getenv('SECRET_KEY') or '{{ secret }}'
 DEBUG = os.getenv('DEBUG') == 'on'
 TESTING = os.getenv('TESTING') == 'on'
 
-# Registered app packages
-REGISTERED_APP = [
-    'app'
-]
-
 # Logger configuration
 log_level = os.getenv('LOG_LEVEL') or 'INFO'
 LOGGER = {
@@ -54,4 +49,10 @@ LOGGER = {
         'level': log_level,
         'handlers': (os.getenv('LOG_HANDLERS') or 'console,file').split(',')
     }
+}
+
+# Celery
+CELERY_CONFIG = {
+    'broker_url': os.getenv('CELERY_BROKER_URL'),
+    'result_backend': os.getenv('CELERY_RESULT_BACKEND'),
 }

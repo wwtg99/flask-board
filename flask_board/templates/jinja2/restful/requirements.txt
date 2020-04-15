@@ -3,3 +3,4 @@ click
 gunicorn
 python-dotenv
 flask-restful
+pytest

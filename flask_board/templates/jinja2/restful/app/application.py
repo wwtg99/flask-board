@@ -1,8 +1,6 @@
 import os
 from werkzeug.utils import import_string
-from logging.config import dictConfig
 from flask import Flask
-from celery import Celery
 
 
 # Environment key to config flask instance path
@@ -13,19 +11,19 @@ ENV_CONFIG_MODULE = 'FLASK_CONFIG_MODULE'
 
 def config_logger(app):
     if 'LOGGER' in app.config:
+        from logging.config import dictConfig
         dictConfig(app.config['LOGGER'])
 
 
-def register_app(app):
+def register_blueprints(app):
     """
-    Import blueprints module in REGISTERED_APP config.
+    Import blueprints module.
 
     :param app: flask app
     """
     with app.app_context():
-        for a in app.config['REGISTERED_APP']:
-            bp = '{}.blueprints'.format(a)
-            import_string(bp)
+        bp_mod = 'app.blueprints'
+        import_string(bp_mod, silent=True)
 
 
 def create_app_by_config(conf=None, config_log=True, register=True):
@@ -34,7 +32,7 @@ def create_app_by_config(conf=None, config_log=True, register=True):
 
     :param conf: config object
     :param config_log: whether to config logger
-    :param register: whether to register apps
+    :param register: whether to register blueprints
     :return: flask app
     """
     # check instance path
@@ -55,7 +53,7 @@ def create_app_by_config(conf=None, config_log=True, register=True):
         config_logger(app)
     # register app
     if register:
-        register_app(app)
+        register_blueprints(app)
     return app
 
 
@@ -64,19 +62,10 @@ def create_app(config_log=True, register=True):
     Create flask app by config module.
 
     :param config_log: whether to config logger
-    :param register: whether to register apps
+    :param register: whether to register blueprints
     :return: flask app
     """
-    config = os.environ.get(ENV_CONFIG_MODULE) or 'config'
+    config = os.environ.get(ENV_CONFIG_MODULE)
+    if not config:
+        raise ValueError('no config found')
     return create_app_by_config(conf=config, config_log=config_log, register=register)
-
-
-def init_celery(app):
-    cel = Celery(app.name)
-    cel.conf.update(app.config['CELERY_CONFIG'])
-    # register tasks
-    with app.app_context():
-        register_apps = app.config['REGISTERED_APP']
-        for app in register_apps:
-            import_string('{}.tasks'.format(app), silent=True)
-    return cel

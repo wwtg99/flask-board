@@ -44,3 +44,11 @@ Run docker image celery worker
 ```
 docker run -d --env-file=.env <your-image>:<your-tag> celery worker -A worker:celery
 ```
+
+# Run unit tests
+
+Define your tests in tests package.
+
+```
+pytest
+```
