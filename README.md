@@ -27,13 +27,13 @@ flask board --help
 flask board your-project
 ```
 
-Same as used the `default` template.
+Same as using the `default` template.
 
 ```
 flask board your-project -t default
 ```
 
-## Available templates
+## Available built-in templates
 
 - default: default flask web app
 - restful: flask restful API web app
