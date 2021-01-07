@@ -55,4 +55,6 @@ LOGGER = {
 CELERY_CONFIG = {
     'broker_url': os.getenv('CELERY_BROKER_URL'),
     'result_backend': os.getenv('CELERY_RESULT_BACKEND'),
+    'worker_concurrency': int(os.getenv('CELERY_WORKERS') or 1),
+    'task_default_queue': os.getenv('CELERY_TASK_QUEUE')
 }

@@ -1,11 +1,18 @@
-from celery import shared_task
-from app.application import create_app
+from celery.utils.log import get_task_logger
+from flask import current_app as app
+from worker import celery
+
+
+# logger = get_task_logger(__name__)
+# retry_for = (Exception, )
+# retry_kwargs = {
+#     'max_retries': 3,
+#     'countdown': 1
+# }
 
 
 # define your tasks here
-# @shared_task
+# @celery.task(autoretry_for=retry_for, retry_kwargs=retry_kwargs)
 # def test():
-#     app = create_app(config_log=False)
-#     with app.app_context():
-#         # do something within flask app
-#         pass
+#     # do something within flask app
+#     pass

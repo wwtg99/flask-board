@@ -71,7 +71,7 @@ def create_app(config_log=True, register=True):
     return create_app_by_config(conf=config, config_log=config_log, register=register)
 
 
-def init_celery(app):
+def make_celery(app):
     """
     Initialize celery by app.
 
@@ -79,10 +79,14 @@ def init_celery(app):
     :return: celery
     """
     from celery import Celery
-    cel = Celery(app.name)
-    cel.conf.update(app.config['CELERY_CONFIG'])
-    # register tasks
-    with app.app_context():
-        task_mod = 'app.tasks'
-        import_string(task_mod, silent=True)
-    return cel
+    celery = Celery(app.name)
+    celery.conf.update(app.config['CELERY_CONFIG'])
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+    celery.autodiscover_tasks(['app'])
+    return celery

@@ -26,4 +26,11 @@ def handle_api_exception(error):
 #     logging.error(e)
 #     return {'message': 'internal server error'}, 500
 
+# add commands
+# use app or bp to register command
+# @bp.cli.command('test')
+# def test():
+#     click.echo('Test...')
+
+
 app.register_blueprint(bp)
